@@ -43,6 +43,13 @@
  */
 
 /**  HEADER BEGINS HERE  **/
+#ifdef DEBUG
+#include <assert.h>
+#define STB_VORBIS_NO_INLINE_DECODE
+#define STB_VORBIS_NO_DEFER_FLOOR
+#ENDIF
+
+
 
 #ifndef STB_VORBIS_INCLUDE_STB_VORBIS_H
 #define STB_VORBIS_INCLUDE_STB_VORBIS_H
@@ -550,7 +557,6 @@ enum STBVorbisError {
 #ifndef STB_VORBIS_NO_CRT
 #include <stdlib.h>
 #include <string.h>
-//#include <assert.h>
 #include <math.h>
 #if !(defined(__APPLE__) || defined(MACOSX) || defined(macintosh) || defined(Macintosh))
 #include <malloc.h>
@@ -1014,7 +1020,9 @@ static int compute_codewords(Codebook *c, uint8 *len, int n, uint32 *values){
 	/* find the first entry */
 	for (k = 0; k < n; ++k) if (len[k] < NO_CODE) break;
 	if (k == n) {
-		//assert(c->sorted_entries == 0);
+#ifdef DEBUG
+		assert(c->sorted_entries == 0);
+#endif
 		return TRUE;
 	}
 	/* add to the list */
@@ -1040,7 +1048,9 @@ static int compute_codewords(Codebook *c, uint8 *len, int n, uint32 *values){
 		 */
 		while (z > 0 && !available[z]) --z;
 		if (z == 0) {
-			//assert(0);
+#ifdef DEBUG
+			assert(0);
+#endif
 			return FALSE;
 		}
 		res = available[z];
@@ -1049,7 +1059,9 @@ static int compute_codewords(Codebook *c, uint8 *len, int n, uint32 *values){
 		/* propogate availability up the tree */
 		if (z != len[i]) {
 			for (y = len[i]; y > z; --y) {
-				//assert(available[y] == 0);
+#ifdef DEBUG
+				assert(available[y] == 0);
+#endif
 				available[y] = res + (1 << (32 - y));
 			}
 		}
@@ -1090,7 +1102,9 @@ static int uint32_compare(const void *p, const void *q){
 
 static int include_in_sort(Codebook *c, uint8 len){
 	if (c->sparse) {
-		//assert(len != NO_CODE);
+#ifdef DEBUG
+		assert(len != NO_CODE);
+#endif
 		return TRUE;
 	}
 	if (len == NO_CODE) return FALSE;
@@ -1116,7 +1130,9 @@ static void compute_sorted_huffman(Codebook *c, uint8 *lengths, uint32 *values){
 		for (i = 0; i < c->entries; ++i)
 			if (include_in_sort(c, lengths[i]))
 				c->sorted_codewords[k++] = bit_reverse(c->codewords[i]);
-		//assert(k == c->sorted_entries);
+#ifdef DEBUG
+		assert(k == c->sorted_entries);
+#endif
 	} else {
 		for (i = 0; i < c->sorted_entries; ++i)
 			c->sorted_codewords[i] = bit_reverse(c->codewords[i]);
@@ -1148,7 +1164,9 @@ static void compute_sorted_huffman(Codebook *c, uint8 *lengths, uint32 *values){
 					n >>= 1;
 				}
 			}
-			//assert(c->sorted_codewords[x] == code);
+#ifdef DEBUG
+			assert(c->sorted_codewords[x] == code);
+#endif
 			if (c->sparse) {
 				c->sorted_values[x] = values[i];
 				c->codeword_lengths[x] = huff_len;
@@ -1173,8 +1191,10 @@ static int lookup1_values(int entries, int dim){
 	
 	/* (int) cast for MinGW warning; floor() to avoid _ftol() when non-CRT */
 	if ((int)floor(pow((float)r + 1, dim)) <= entries)  ++r;
-	//assert(pow((float)r + 1, dim) > entries);
-	//assert((int)floor(pow((float)r, dim)) <= entries);
+#ifdef DEBUG
+	assert(pow((float)r + 1, dim) > entries);
+	assert((int)floor(pow((float)r, dim)) <= entries);
+#endif
 	return r;
 }
 
@@ -1457,7 +1477,9 @@ static int next_segment(vorb *f){
 	}
 	if (f->next_seg >= f->segment_count)
 		f->next_seg = -1;
-	//assert(f->bytes_in_seg == 0);
+#ifdef DEBUG
+	assert(f->bytes_in_seg == 0);
+#endif
 	f->bytes_in_seg = len;
 	return len;
 }
@@ -1470,7 +1492,9 @@ static int get8_packet_raw(vorb *f){
 		if (f->last_seg) return EOP;
 		else if (!next_segment(f)) return EOP;
 	}
-	//assert(f->bytes_in_seg > 0);
+#ifdef DEBUG
+	assert(f->bytes_in_seg > 0);
+#endif
 	--f->bytes_in_seg;
 	++f->packet_bytes;
 	return get8(f);
@@ -1557,8 +1581,9 @@ static int codebook_decode_scalar_raw(vorb *f, Codebook *c){
 	int i;
 
 	prep_huffman(f);
-
-	//assert(c->sorted_codewords || c->codewords);
+#ifdef DEBUG
+	assert(c->sorted_codewords || c->codewords);
+#endif
 	/* cases to use binary search: sorted_codewords && !c->codewords
 	 *                             sorted_codewords && c->entries > 8
 	 */
@@ -1592,7 +1617,9 @@ static int codebook_decode_scalar_raw(vorb *f, Codebook *c){
 	}
 
 	/* if small, linear search */
-	//assert(!c->sparse);
+#ifdef DEBUG
+	assert(!c->sparse);
+#endif
 	for (i = 0; i < c->entries; ++i) {
 		if (c->codeword_lengths[i] == NO_CODE) continue;
 		if (c->codewords[i] == (f->acc & ((1 << c->codeword_lengths[i]) - 1))) {
@@ -1683,7 +1710,9 @@ static int codebook_decode_start(vorb *f, Codebook *c, int len){
 		error(f, VORBIS_invalid_stream);
 	} else {
 		DECODE_VQ(z, f, c);
-		//if (c->sparse) assert(z < c->sorted_entries);
+#ifdef DEBUG
+		if (c->sparse) assert(z < c->sorted_entries);
+#endif
 		if (z < 0) {  /* check for EOP */
 			if (!f->bytes_in_seg)
 				if (f->last_seg)
@@ -1775,7 +1804,7 @@ static int codebook_decode_deinterleave_repeat(vorb *f, Codebook *c, float **out
 		float last = CODEBOOK_ELEMENT_BASE(c);
 		DECODE_VQ(z, f, c);
 #ifndef STB_VORBIS_DIVIDES_IN_CODEBOOK
-		//assert(!c->sparse || z < c->sorted_entries);
+		assert(!c->sparse || z < c->sorted_entries);
 #endif
 		if (z < 0) {
 			if (!f->bytes_in_seg)
@@ -2443,8 +2472,9 @@ static void imdct_step3_iter0_loop(int n, float *e, int i_off, int k_off, float 
 	float *ee0 = e + i_off;
 	float *ee2 = ee0 + k_off;
 	int i;
-
-	//assert((n & 3) == 0);
+#ifdef DEBUG
+	assert((n & 3) == 0);
+#endif
 	for (i = (n >> 2); i > 0; --i) {
 		float k00_20, k01_21;
 		k00_20 = ee0[0] - ee2[0];
@@ -2856,8 +2886,9 @@ static void inverse_mdct(float *buffer, int n, vorb *f, int blocktype){
 
 
 	/* data must be in buf2 */
-	//assert(v == buf2);
-
+#ifdef DEBUG
+	assert(v == buf2);
+#endif
 	/* step 7   (paper output is v, now v)
 	 * this is now in place
 	 */
@@ -3048,7 +3079,9 @@ void inverse_mdct_naive(float *buffer, int n){
 	/* step 4 */
 	for (i = 0; i < n8; ++i) {
 		int j = bit_reverse(i) >> (32 - ld + 3);
-		//assert(j < n8);
+#ifdef DEBUG
+		assert(j < n8);
+#endif
 		if (i == j) {
 			/* paper bug: original code probably swapped in place; if copying,
 			 *            need to directly copy in this case
@@ -3113,7 +3146,9 @@ static float *get_window(vorb *f, int len){
 	len <<= 1;
 	if (len == f->blocksize_0) return f->window[0];
 	if (len == f->blocksize_1) return f->window[1];
-	//assert(0);
+#ifdef DEBUG
+	assert(0);
+#endif
 	return NULL;
 }
 
@@ -3172,9 +3207,9 @@ retry:
 		while (EOP != get8_packet(f)) ;
 		goto retry;
 	}
-
-	//if (f->alloc.alloc_buffer) assert(f->alloc.alloc_buffer_length_in_bytes == f->temp_offset);
-
+#ifdef DEBUG
+	if (f->alloc.alloc_buffer) assert(f->alloc.alloc_buffer_length_in_bytes == f->temp_offset);
+#endif
 	i = get_bits(f, ilog(f->mode_count - 1));
 	if (i == EOP) return FALSE;
 	if (i >= f->mode_count) return FALSE;
@@ -3323,9 +3358,9 @@ error:
 	}
 	stb_prof(0);
 	/* at this point we've decoded all floors */
-
-	//if (f->alloc.alloc_buffer) assert(f->alloc.alloc_buffer_length_in_bytes == f->temp_offset);
-
+#ifdef DEBUG
+	if (f->alloc.alloc_buffer) assert(f->alloc.alloc_buffer_length_in_bytes == f->temp_offset);
+#endif
 	/* re-enable coupled channels if necessary */
 	memcpy(really_zero_channel, zero_channel, sizeof(really_zero_channel[0]) * f->channels);
 	for (i = 0; i < map->coupling_steps; ++i)
@@ -3355,9 +3390,9 @@ error:
 		t = f->residue_types[r];
 		decode_residue(f, residue_buffers, ch, n2, r, do_not_decode);
 	}
-
-	//if (f->alloc.alloc_buffer) assert(f->alloc.alloc_buffer_length_in_bytes == f->temp_offset);
-
+#ifdef DEBUG
+	if (f->alloc.alloc_buffer) assert(f->alloc.alloc_buffer_length_in_bytes == f->temp_offset);
+#endif
 /* INVERSE COUPLING */
 	stb_prof(14);
 	for (i = map->coupling_steps - 1; i >= 0; --i) {
@@ -3465,8 +3500,9 @@ error:
 	}
 	if (f->current_loc_valid)
 		f->current_loc += (right_start - left_start);
-
-	//if (f->alloc.alloc_buffer) assert(f->alloc.alloc_buffer_length_in_bytes == f->temp_offset);
+#ifdef DEBUG
+	if (f->alloc.alloc_buffer) assert(f->alloc.alloc_buffer_length_in_bytes == f->temp_offset);
+#endif
 	*len = right_end;  /* ignore samples after the window goes to 0 */
 	return TRUE;
 } /* vorbis_decode_packet_rest */
@@ -4147,7 +4183,9 @@ skip:;
 	f->first_decode = TRUE;
 
 	if (f->alloc.alloc_buffer) {
-		//assert(f->temp_offset == f->alloc.alloc_buffer_length_in_bytes);
+#ifdef DEBUG
+		assert(f->temp_offset == f->alloc.alloc_buffer_length_in_bytes);
+#endif
 		/* check if there's enough temp memory so we don't error later */
 		if (f->setup_offset + sizeof(*f) + f->temp_memory_required > (unsigned)f->temp_offset)
 			return error(f, VORBIS_outofmem);
@@ -4555,7 +4593,9 @@ static int vorbis_seek_frame_from_page(stb_vorbis *f, uint32 page_start, uint32 
 		 * then leave frame pending
 		 */
 		frames_to_skip = frame - 1;
-		//assert(frames_to_skip >= 0);
+#ifdef DEBUG
+		assert(frames_to_skip >= 0);
+#endif
 		data_to_skip = -1;
 	}
 
@@ -4587,8 +4627,10 @@ static int vorbis_seek_frame_from_page(stb_vorbis *f, uint32 page_start, uint32 
 		if (target_sample != frame_start) {
 			int n;
 			stb_vorbis_get_frame_float(f, &n, NULL);
-			//assert(target_sample > frame_start);
-			//assert(f->channel_buffer_start + (int)(target_sample - frame_start) < f->channel_buffer_end);
+#ifdef DEBUG
+			assert(target_sample > frame_start);
+			assert(f->channel_buffer_start + (int)(target_sample - frame_start) < f->channel_buffer_end);
+#endif
 			f->channel_buffer_start += (target_sample - frame_start);
 		}
 	}
