@@ -47,9 +47,7 @@
 #include <assert.h>
 #define STB_VORBIS_NO_INLINE_DECODE
 #define STB_VORBIS_NO_DEFER_FLOOR
-#ENDIF
-
-
+#endif
 
 #ifndef STB_VORBIS_INCLUDE_STB_VORBIS_H
 #define STB_VORBIS_INCLUDE_STB_VORBIS_H
@@ -1803,7 +1801,7 @@ static int codebook_decode_deinterleave_repeat(vorb *f, Codebook *c, float **out
 	while (total_decode > 0) {
 		float last = CODEBOOK_ELEMENT_BASE(c);
 		DECODE_VQ(z, f, c);
-#ifndef STB_VORBIS_DIVIDES_IN_CODEBOOK
+#ifdef DEBUG
 		assert(!c->sparse || z < c->sorted_entries);
 #endif
 		if (z < 0) {
@@ -3597,13 +3595,7 @@ static int is_whole_packet_present(stb_vorbis *f, int end_page){
 		            * page' flag */
 		for (; s < f->segment_count; ++s) {
 			p += f->segments[s];
-			if (f->segments[s] < 255)                                                  /*
-				                                                                        * stop
-				                                                                        * at
-				                                                                        * first
-				                                                                        * short
-				                                                                        * segment */
-				break;
+			if (f->segments[s] < 255)  break; /* stop at first short segment */
 		}
 		/* either this continues, or it ends it... */
 		if (end_page)
