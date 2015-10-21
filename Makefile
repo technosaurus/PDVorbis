@@ -5,7 +5,7 @@
 #CC = musl-gcc
 #CFLAGS = -pipe -Os -mtune=i386 -static -s -Wall -I/usr/i386-linux-uclibc/usr/include
 #CFLAGS = -pipe -Os -mtune=i386 -static -s -Wall 
-CFLAGS = -Os -m32 -mregparm=3 -ffunction-sections -fdata-sections -fmerge-all-constants \
+CFLAGS = -Os -mx32 -ffunction-sections -fdata-sections -fmerge-all-constants \
 -fomit-frame-pointer  -fno-unwind-tables -fno-asynchronous-unwind-tables
 
 #LDFLAGS = -L/usr/i386-linux-uclibc/lib -lm -Wl,--gc-sections,--sort-common,-s
